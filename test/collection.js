@@ -22,12 +22,6 @@ describe('Collection', function () {
     assert.equal(collection.hasOwnProperty('options'), true);
   });
 
-  it('should contain an `app` property', function () {
-    var collection = new Collection({app: {}});
-    assert.deepEqual(collection.app, {});
-    assert.equal(collection.hasOwnProperty('app'), true);
-  });
-
   it('should contain a `data` property', function () {
     var collection = new Collection({app: {}});
     assert.deepEqual(collection.data, {});
@@ -129,8 +123,17 @@ describe('Collection', function () {
   });
 
   it('should pick an option from the `app.options`', function () {
-    var app = new Collection({foo: 'bar'});
-    var collection = new Collection({app: app});
+    var app = new Base({foo: 'bar'});
+    var collection = new Collection();
+    collection.app = app;
+    var pickOption = collection.pickOption;
+    collection.pickOption = function (key) {
+      var opt = pickOption.call(this, key);
+      if (typeof opt === 'undefined') {
+        return this.app.pickOption(key);
+      }
+      return opt;
+    };
     assert.equal(collection.pickOption('foo'), 'bar');
   });
 
@@ -168,9 +171,9 @@ describe('Collection', function () {
 
   it('should iterator over `own` keys on object using forOwn', function () {
     var collection = new Collection();
-    collection.set('foo', 'bar');
-    collection.set('bar', 'baz');
-    collection.set('baz', 'bang');
+    collection.setItem('foo', 'bar');
+    collection.setItem('bar', 'baz');
+    collection.setItem('baz', 'bang');
     var keys = ['foo', 'bar', 'baz'];
     var vals = ['bar', 'baz', 'bang'];
     collection.forOwn(function (val, key) {
@@ -269,76 +272,76 @@ describe('Collection', function () {
 
   it('should get the current items on the collection', function () {
     var collection = new Collection();
-    collection.set('foo', createItem({name: 'foo', content: 'foo'}, {collection: collection}));
-    collection.set('bar', createItem({name: 'bar', content: 'bar'}, {collection: collection}));
-    collection.set('baz', createItem({name: 'baz', content: 'baz'}, {collection: collection}));
-    collection.set('bang', createItem({name: 'bang', content: 'bang'}, {collection: collection}));
+    collection.setItem('foo', new Item({name: 'foo', content: 'foo'}, {collection: collection}));
+    collection.setItem('bar', new Item({name: 'bar', content: 'bar'}, {collection: collection}));
+    collection.setItem('baz', new Item({name: 'baz', content: 'baz'}, {collection: collection}));
+    collection.setItem('bang', new Item({name: 'bang', content: 'bang'}, {collection: collection}));
     var items = collection.items;
     assert.deepEqual(Object.keys(items), ['foo', 'bar', 'baz', 'bang']);
     forOwn(items, function (item, key) {
-      assert.deepEqual(item, collection.get(key));
+      assert.deepEqual(item, collection.getItem(key));
     });
   });
 
   it('should set the items on the collection', function () {
     var collection = new Collection();
     var items = {};
-    items.foo = createItem({name: 'foo', content: 'foo'}, {collection: collection});
-    items.bar = createItem({name: 'bar', content: 'bar'}, {collection: collection});
-    items.baz = createItem({name: 'baz', content: 'baz'}, {collection: collection});
-    items.bang = createItem({name: 'bang', content: 'bang'}, {collection: collection});
+    items.foo = new Item({name: 'foo', content: 'foo'}, {collection: collection});
+    items.bar = new Item({name: 'bar', content: 'bar'}, {collection: collection});
+    items.baz = new Item({name: 'baz', content: 'baz'}, {collection: collection});
+    items.bang = new Item({name: 'bang', content: 'bang'}, {collection: collection});
     collection.items = items;
     assert.deepEqual(Object.keys(items), ['foo', 'bar', 'baz', 'bang']);
-    assert.deepEqual(Object.keys(collection), ['foo', 'bar', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(collection.items), ['foo', 'bar', 'baz', 'bang']);
     forOwn(items, function (item, key) {
-      assert.deepEqual(item, collection.get(key));
+      assert.deepEqual(item, collection.getItem(key));
     });
   });
 
   it('should sort the items by the key', function () {
     var collection = new Collection();
-    collection.set('foo', createItem({name: 'foo', content: 'foo'}, {collection: collection}));
-    collection.set('bar', createItem({name: 'bar', content: 'bar'}, {collection: collection}));
-    collection.set('baz', createItem({name: 'baz', content: 'baz'}, {collection: collection}));
-    collection.set('bang', createItem({name: 'bang', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(collection), ['foo', 'bar', 'baz', 'bang']);
+    collection.setItem('foo', new Item({name: 'foo', content: 'foo'}, {collection: collection}));
+    collection.setItem('bar', new Item({name: 'bar', content: 'bar'}, {collection: collection}));
+    collection.setItem('baz', new Item({name: 'baz', content: 'baz'}, {collection: collection}));
+    collection.setItem('bang', new Item({name: 'bang', content: 'bang'}, {collection: collection}));
+    assert.deepEqual(Object.keys(collection.items), ['foo', 'bar', 'baz', 'bang']);
     collection.sortBy();
-    assert.deepEqual(Object.keys(collection), ['bang', 'bar', 'baz', 'foo']);
+    assert.deepEqual(Object.keys(collection.items), ['bang', 'bar', 'baz', 'foo']);
   });
 
   it('should sort the items a property', function () {
     var collection = new Collection();
-    collection.set('foo', createItem({name: 'a-foo', content: 'foo'}, {collection: collection}));
-    collection.set('bar', createItem({name: 'y-bar', content: 'bar'}, {collection: collection}));
-    collection.set('baz', createItem({name: 'x-baz', content: 'baz'}, {collection: collection}));
-    collection.set('bang', createItem({name: 'w-bang', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(collection), ['foo', 'bar', 'baz', 'bang']);
+    collection.setItem('foo', new Item({name: 'a-foo', content: 'foo'}, {collection: collection}));
+    collection.setItem('bar', new Item({name: 'y-bar', content: 'bar'}, {collection: collection}));
+    collection.setItem('baz', new Item({name: 'x-baz', content: 'baz'}, {collection: collection}));
+    collection.setItem('bang', new Item({name: 'w-bang', content: 'bang'}, {collection: collection}));
+    assert.deepEqual(Object.keys(collection.items), ['foo', 'bar', 'baz', 'bang']);
     collection.sortBy('name');
-    assert.deepEqual(Object.keys(collection), ['foo', 'bang', 'baz', 'bar']);
+    assert.deepEqual(Object.keys(collection.items), ['foo', 'bang', 'baz', 'bar']);
   });
 
   it('should be chainable', function () {
     var collection = new Collection();
-    collection.set('foo', createItem({name: 'a-foo', order: '20', content: 'foo'}, {collection: collection}));
-    collection.set('bar', createItem({name: 'y-bar', order: '10', content: 'bar'}, {collection: collection}));
-    collection.set('baz', createItem({name: 'x-baz', order: '30', content: 'baz'}, {collection: collection}));
-    collection.set('bang', createItem({name: 'w-bang', order: '40', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(collection), ['foo', 'bar', 'baz', 'bang']);
+    collection.setItem('foo', new Item({name: 'a-foo', order: '20', content: 'foo'}, {collection: collection}));
+    collection.setItem('bar', new Item({name: 'y-bar', order: '10', content: 'bar'}, {collection: collection}));
+    collection.setItem('baz', new Item({name: 'x-baz', order: '30', content: 'baz'}, {collection: collection}));
+    collection.setItem('bang', new Item({name: 'w-bang', order: '40', content: 'bang'}, {collection: collection}));
+    assert.deepEqual(Object.keys(collection.items), ['foo', 'bar', 'baz', 'bang']);
     collection
       .sortBy('name')
       .sortBy('order');
-    assert.deepEqual(Object.keys(collection), ['bar', 'foo', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(collection.items), ['bar', 'foo', 'baz', 'bang']);
   });
 
   it('should get recent items returned as a List', function () {
     var collection = new Collection();
-    collection.set('post-1', createItem({date: '2015-01-05', name: 'Post 1', content: 'Post 1'}, {collection: collection}));
-    collection.set('post-2', createItem({date: '2015-02-05', name: 'Post 2', content: 'Post 2'}, {collection: collection}));
-    collection.set('post-3', createItem({date: '2015-03-05', name: 'Post 3', content: 'Post 3'}, {collection: collection}));
-    collection.set('post-4', createItem({date: '2015-04-05', name: 'Post 4', content: 'Post 4'}, {collection: collection}));
-    collection.set('post-5', createItem({date: '2015-05-05', name: 'Post 5', content: 'Post 5'}, {collection: collection}));
-    collection.set('post-6', createItem({date: '2015-06-05', name: 'Post 6', content: 'Post 6'}, {collection: collection}));
-    collection.set('post-7', createItem({date: '2015-07-05', name: 'Post 7', content: 'Post 7'}, {collection: collection}));
+    collection.setItem('post-1', new Item({date: '2015-01-05', name: 'Post 1', content: 'Post 1'}));
+    collection.setItem('post-2', new Item({date: '2015-02-05', name: 'Post 2', content: 'Post 2'}));
+    collection.setItem('post-3', new Item({date: '2015-03-05', name: 'Post 3', content: 'Post 3'}));
+    collection.setItem('post-4', new Item({date: '2015-04-05', name: 'Post 4', content: 'Post 4'}));
+    collection.setItem('post-5', new Item({date: '2015-05-05', name: 'Post 5', content: 'Post 5'}));
+    collection.setItem('post-6', new Item({date: '2015-06-05', name: 'Post 6', content: 'Post 6'}));
+    collection.setItem('post-7', new Item({date: '2015-07-05', name: 'Post 7', content: 'Post 7'}));
     var recent = collection.recent('date', null, {limit: 3});
     assert.equal(recent instanceof List, true);
     assert.equal(recent.items.length, 3);
@@ -349,13 +352,7 @@ describe('Collection', function () {
     ]);
 
     recent.forEach(function (post) {
-      assert.deepEqual(post, collection.get(post.key));
+      assert.deepEqual(post, collection.getItem(post.key));
     });
   });
 });
-
-function createItem(obj, options) {
-  var item = new Item(options);
-  item.visit('set', obj);
-  return item;
-}

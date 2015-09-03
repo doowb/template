@@ -131,7 +131,7 @@ describe('collection methods', function () {
   });
 
   describe('.use', function () {
-    it('should expose `.use` for running plugins on views:', function () {
+    it('should expose `.use` for running plugins on collections:', function () {
       app
         .pages('test/fixtures/*.txt')
         .use(utils.rename);

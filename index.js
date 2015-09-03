@@ -253,6 +253,7 @@ utils.delegate(Template.prototype, {
 
     var Views = this.get('Views');
     var views = new Views(opts);
+    views.define('app', this);
     this.viewType(plural, views.viewType());
 
     // add custom View constructor for collection items

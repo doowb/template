@@ -21,6 +21,8 @@ lazy('extend-shallow', 'extend');
 
 function Item(item, options) {
   Base.call(this, options);
+  this.define('collection', this.options.collection);
+
   if (typeof item === 'object') {
     this.visit('set', item);
   }
@@ -44,7 +46,7 @@ utils.delegate(Item.prototype, {
    */
 
   track: function(method, note) {
-    if (!this.enabled('track changes')) {
+    if (!this.app.enabled('track changes')) {
       return;
     }
     var state = this.omit('history');
@@ -55,6 +57,22 @@ utils.delegate(Item.prototype, {
     this.options.history = this.options.history || [];
     this.options.history.push(state);
     return this;
+  },
+
+  /**
+   * Get an option from the item, collection or app instance,
+   * in that order.
+   */
+
+  pickOption: function(prop) {
+    var opt = this.option(prop);
+    if (typeof opt === 'undefined') {
+      opt = this.collection && this.collection.option(prop);
+    }
+    if (typeof opt === 'undefined') {
+      return this.app && this.app.option(prop);
+    }
+    return opt;
   }
 });
 

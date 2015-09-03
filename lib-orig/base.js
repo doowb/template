@@ -45,6 +45,7 @@ function Base(options) {
   this.define('options', options || {});
   this.define('hints', this.hints || {});
   this.define('data', this.data || {});
+  this.define('app', this.app || this.options.app || {});
   this.define('_cache', {});
   this.define('_callbacks', this._callbacks);
 
@@ -247,7 +248,8 @@ Base.prototype = Emitter({
   },
 
   /**
-   * Get an option. Override this to pick from other places.
+   * Get an option from either the view, collection, or app instance,
+   * in that order.
    *
    * @param  {String} prop Property name. Dot notation may be used.
    * @return {any}
@@ -255,7 +257,11 @@ Base.prototype = Emitter({
    */
 
   pickOption: function(prop) {
-    return this.option(prop);
+    var opt = this.option(prop);
+    if (typeof opt === 'undefined') {
+      return this.app && this.app.option ? this.app.option(prop) : null;
+    }
+    return opt;
   },
 
   /**

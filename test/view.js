@@ -9,34 +9,29 @@ var View = require('../lib/view');
 
 describe('View', function () {
   it('should create a new instance of View:', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     assert.equal(view instanceof View, true);
     assert.equal(view instanceof Item, true);
     assert.equal(view instanceof Base, true);
   });
 
   it('should contain an `options` property', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     assert.equal(typeof view.options, 'object');
   });
 
-  it('should contain an `app` property', function () {
-    var view = new View(createView(), createOptions());
-    assert.equal(typeof view.app === 'object', true);
-  });
-
   it('should contain a `data` property', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     assert.deepEqual(view.data, {});
   });
 
   it('should contain a `_cache` property', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     assert.deepEqual(view._cache, {});
   });
 
   it('fragmentCache should cache a function call', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     function foo (bar) {
       return function () {
         return bar;
@@ -51,19 +46,19 @@ describe('View', function () {
   });
 
   it('should set properties on the object', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.set('foo', 'bar');
     assert.equal(view.foo, 'bar');
   });
 
   it('should get properties from the object', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.set('foo', 'bar');
     assert.equal(view.get('foo'), 'bar');
   });
 
   it('should clone the entire object', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.set('foo', 'bar');
     var clone = view.clone();
     assert.equal(clone instanceof View, true);
@@ -73,18 +68,18 @@ describe('View', function () {
   });
 
   it('should set an option', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.option('foo', 'bar');
     assert.deepEqual(view.options.foo, 'bar');
   });
 
   it('should get an option', function () {
-    var view = new View(createView(), createOptions({foo: 'bar'}));
+    var view = new View(createView(), {foo: 'bar'});
     assert.equal(view.option('foo'), 'bar');
   });
 
   it('should emit an `option` event when setting an option', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.on('option', function (key, val) {
       assert.equal(key, 'foo');
       assert.equal(val, 'bar');
@@ -93,19 +88,19 @@ describe('View', function () {
   });
 
   it('should `enable` an option', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.enable('foo');
     assert.equal(view.option('foo'), true);
   });
 
   it('should `disable` an option', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.disable('foo');
     assert.equal(view.option('foo'), false);
   });
 
   it('should check if an option is `enabled`', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.enable('foo');
     view.disable('bar');
     assert.equal(view.enabled('foo'), true);
@@ -113,7 +108,7 @@ describe('View', function () {
   });
 
   it('should check if an option is `disabled`', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.enable('foo');
     view.disable('bar');
     assert.equal(view.disabled('foo'), false);
@@ -121,32 +116,68 @@ describe('View', function () {
   });
 
   it('should pick an option from the local `options`', function () {
-    var view = new View(createView(), createOptions({foo: 'bar'}));
+    var view = new View(createView(), {foo: 'bar'});
     assert.equal(view.pickOption('foo'), 'bar');
   });
 
   it('should pick an option from the collection `options`', function () {
     var collection = new Base({foo: 'bar'});
-    var view = new View(createView(), createOptions({collection: collection}));
+    var app = new Base();
+    var view = new View(createView());
+    view.app = app;
+    view.collection = collection;
+    var pickOption = view.pickOption;
+    view.pickOption = function (key) {
+      var opt = pickOption.call(this, key);
+      if (typeof opt === 'undefined') {
+        opt = this.collection.pickOption(key);
+      }
+      if (typeof opt === 'undefined') {
+        opt = this.app.pickOption(key);
+      }
+      return opt;
+    };
     assert.equal(view.pickOption('foo'), 'bar');
   });
 
 
   it('should pick an option from the `app.options`', function () {
-    var app = createApp(new Base({foo: 'bar'}));
-    var view = new View(createView(), createOptions({app: app}));
+    var app = new Base({foo: 'bar'});
+    var view = new View(createView());
+    view.app = app;
+    var pickOption = view.pickOption;
+    view.pickOption = function (key) {
+      var opt = pickOption.call(this, key);
+      if (typeof opt === 'undefined') {
+        return this.app.pickOption(key);
+      }
+      return opt;
+    };
     assert.equal(view.pickOption('foo'), 'bar');
   });
 
   it('should pick an option from `app.options` when `collection.options` does not have the option', function () {
-    var app = createApp(new Base({foo: 'bar'}));
+    var app = new Base({foo: 'bar'});
     var collection = new Base();
-    var view = new View(createView(), createOptions({app: app, collection: collection}));
+    var view = new View(createView());
+    view.app = app;
+    view.collection = collection;
+    var pickOption = view.pickOption;
+    view.pickOption = function (key) {
+      var opt = pickOption.call(this, key);
+      if (typeof opt === 'undefined') {
+        opt = this.collection.pickOption(key);
+      }
+      if (typeof opt === 'undefined') {
+        opt = this.app.pickOption(key);
+      }
+      return opt;
+    };
     assert.equal(view.pickOption('foo'), 'bar');
   });
 
   it('should `use` a function passing the object and options to the function', function () {
-    var view = new View(createView(), createOptions({foo: 'bar'}));
+    var view = new View(createView(), {foo: 'bar'});
     view.use(function (obj, options) {
       assert.deepEqual(obj, view);
       assert.deepEqual(view.options, options);
@@ -156,7 +187,7 @@ describe('View', function () {
   });
 
   it('should omit keys from object', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.set('foo', 'bar');
     view.set('bar', 'baz');
     view.set('baz', 'bang');
@@ -167,7 +198,7 @@ describe('View', function () {
   });
 
   it('should pick only the keys from object', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.set('foo', 'bar');
     view.set('bar', 'baz');
     view.set('baz', 'bang');
@@ -178,22 +209,29 @@ describe('View', function () {
   });
 
   it('should iterate over `own` keys on object using forOwn', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.set('foo', 'bar');
     view.set('bar', 'baz');
     view.set('baz', 'bang');
-    var keys = ['path', 'content', 'base', 'contexts', 'foo', 'bar', 'baz'];
-    var vals = ['foo.hbs', 'foo', process.cwd(), {locals: {}, data: {}}, 'bar', 'baz', 'bang'];
+
+    var expected = {
+      history: ['foo.hbs'],
+      src: {},
+      base: process.cwd(),
+      contexts: {},
+      locals: {},
+      foo: 'bar',
+      bar: 'baz',
+      baz: 'bang'
+    };
+
     view.forOwn(function (val, key) {
-      var expectedKey = keys.shift();
-      var expectedVal = vals.shift();
-      assert.equal(key, expectedKey);
-      assert.deepEqual(val, expectedVal);
+      assert.deepEqual(val, expected[key]);
     });
   });
 
   it('should visit all properties on an object and call the specified method', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     var obj = {
       foo: 'bar',
       bar: 'baz',
@@ -206,7 +244,7 @@ describe('View', function () {
   });
 
   it('should visit all properties on all objects in an array and call the specified method', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     var arr = [
       {foo: 'bar', bar: 'baz', baz: 'bang'},
       {bang: 'boom', boom: 'beep'},
@@ -223,7 +261,7 @@ describe('View', function () {
   });
 
   it('should forward method from View to another object', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     var obj = {};
     view.forward(obj, ['set', 'get']);
     obj.set('foo', 'bar');
@@ -234,7 +272,7 @@ describe('View', function () {
   });
 
   it('should mixin a function by adding it to the View prototype', function () {
-    var view = new View(createView(), createOptions());
+    var view = new View(createView());
     view.mixin('upper', function (prop) {
       var val = this.get(prop);
       if (typeof val === 'string') {
@@ -246,15 +284,14 @@ describe('View', function () {
     assert.equal(typeof view.upper, 'function');
     assert.equal(view.upper('foo'), 'BAR');
 
-    var base2 = new View(createView(), createOptions());
+    var base2 = new View(createView());
     base2.set('bar', 'baz');
     assert.equal(typeof base2.upper, 'function');
     assert.equal(base2.upper('bar'), 'BAZ');
   });
 
   it('should track changes when `track changes` is enabled', function () {
-    var app = createApp(new Base({'track changes': true}));
-    var view = new View(createView(), createOptions({app: app}));
+    var view = new View(createView(), {'track changes': true});
     view.mixin('upper', function (prop) {
       this.track('upper', 'Making ' + prop + ' upper case.');
       var val = this.get(prop);
@@ -277,24 +314,9 @@ describe('View', function () {
   });
 });
 
-function noop () {};
-
-function createApp (app) {
-  app = app || new Base({});
-  app.handleView = noop;
-  return app;
-}
-
 function createView (view) {
   view = view || {};
   view.path = view.path || 'foo.hbs';
   view.content = view.content || 'foo';
   return view;
-}
-
-function createOptions (options) {
-  options = options || {};
-  options.app = options.app || createApp();
-  options.collection = options.collection || new Base({app: options.app, collection: 'foos'});
-  return options;
 }

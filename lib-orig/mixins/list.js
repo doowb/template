@@ -12,8 +12,6 @@ lazy('sort-object');
 lazy('array-sort');
 lazy('recent');
 
-var decorate = require('../decorators/view');
-
 /**
  * Expose List mixins
  */
@@ -58,10 +56,7 @@ module.exports = function (view) {
       // helper function to create a new page to put into the returned list.
       function createPage() {
         var page = new View(view.clone(), lazy.extend({}, view.options, opts));
-        decorate(this.collection, page);
         page.data.pagination = new Parent(lazy.extend({}, self.options, {Item: Item}));
-        page.data.pagination.define('app', this.app);
-        page.data.pagination.define('collection', this.collection);
         return page;
       }
 
@@ -79,9 +74,7 @@ module.exports = function (view) {
 
       // Create a new list: `pages`
       var pages = new Parent(lazy.extend({}, this.options, opts, {Item: View}));
-      pages.define('app', this.app);
-      pages.define('collection', this.collection);
-      var page = createPage.call(this);
+      var page = createPage();
 
       while (len--) {
         var item = items[i++];
@@ -91,7 +84,7 @@ module.exports = function (view) {
         if (i % opts.limit === 0) {
           updateProperties(page);
           pages.item('page-' + (pageNum-1), page);
-          page = createPage.call(this);
+          page = createPage();
         }
       }
 

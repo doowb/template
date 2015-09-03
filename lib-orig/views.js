@@ -24,6 +24,17 @@ var Collection = require('./collection');
 var utils = require('./utils');
 var decorate = require('./decorators/view');
 
+function makeView (app) {
+  var View = require('./view2');
+  function SubView () {
+    View.apply(this, arguments);
+  }
+
+  View.extend(SubView);
+  decorate(app, SubView);
+  return SubView;
+}
+
 /**
  * Create an instance of `Views`.
  *
@@ -82,21 +93,8 @@ utils.delegate(Views.prototype, {
     var View = this.get('View');
     val.path = val.path || key;
     key = val.key = this.renameKey(key);
-    var view = new View(val, opts)
-    decorate(this, view);
-    this.setItem(key, (this[key] = view));
+    this.setItem(key, (this[key] = new View(val, opts)));
     return this;
-  },
-
-  getView: function (key) {
-    var res = this.getItem(key);
-    if (typeof res === 'undefined') {
-      var name = this.renameKey(key);
-      if (name && name !== key) {
-        res = this.getItem(name);
-      }
-    }
-    return res;
   },
 
   /**
@@ -118,9 +116,6 @@ utils.delegate(Views.prototype, {
 
   get: function(prop) {
     var res = this[prop];
-    if (typeof res === 'undefined') {
-      res = this.getView(prop);
-    }
     if (typeof res === 'undefined') {
       var name = this.renameKey(prop);
       if (name && name !== prop) {

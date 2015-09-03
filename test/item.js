@@ -19,12 +19,6 @@ describe('Item', function () {
     assert.equal(item.hasOwnProperty('options'), true);
   });
 
-  it('should contain an `app` property', function () {
-    var item = new Item({}, {app: {}});
-    assert.deepEqual(item.app, {});
-    assert.equal(item.hasOwnProperty('app'), true);
-  });
-
   it('should contain a `data` property', function () {
     var item = new Item({}, {app: {}});
     assert.deepEqual(item.data, {});
@@ -128,21 +122,62 @@ describe('Item', function () {
   });
 
   it('should pick an option from the collection `options`', function () {
+    var app = new Base();
     var collection = new Base({foo: 'bar'});
-    var item = new Item({}, {collection: collection});
+    var item = new Item({});
+    item.app = app;
+    item.collection = collection;
+    var pickOption = item.pickOption;
+    item.pickOption = function (key) {
+      var opt = pickOption.call(this, key);
+      if (typeof opt === 'undefined') {
+        opt = this.collection.pickOption(key);
+      }
+      if (typeof opt === 'undefined') {
+        opt = this.app.pickOption(key);
+      }
+      return opt;
+    }
     assert.equal(item.pickOption('foo'), 'bar');
   });
 
   it('should pick an option from the `app.options`', function () {
     var app = new Base({foo: 'bar'});
-    var item = new Item({}, {app: app});
+    var collection = new Base();
+    var item = new Item({});
+    item.app = app;
+    item.collection = collection;
+    var pickOption = item.pickOption;
+    item.pickOption = function (key) {
+      var opt = pickOption.call(this, key);
+      if (typeof opt === 'undefined') {
+        opt = this.collection.pickOption(key);
+      }
+      if (typeof opt === 'undefined') {
+        opt = this.app.pickOption(key);
+      }
+      return opt;
+    }
     assert.equal(item.pickOption('foo'), 'bar');
   });
 
   it('should pick an option from `app.options` when `collection.options` does not have the option', function () {
     var app = new Base({foo: 'bar'});
     var collection = new Base();
-    var item = new Item({}, {app: app, collection: collection});
+    var item = new Item({});
+    item.app = app;
+    item.collection = collection;
+    var pickOption = item.pickOption;
+    item.pickOption = function (key) {
+      var opt = pickOption.call(this, key);
+      if (typeof opt === 'undefined') {
+        opt = this.collection.pickOption(key);
+      }
+      if (typeof opt === 'undefined') {
+        opt = this.app.pickOption(key);
+      }
+      return opt;
+    }
     assert.equal(item.pickOption('foo'), 'bar');
   });
 
@@ -271,8 +306,7 @@ describe('Item', function () {
   });
 
   it('should track changes when `track changes` is enabled', function () {
-    var app = new Base({'track changes': true});
-    var item = new Item({}, {app: app});
+    var item = new Item({}, {'track changes': true});
     item.mixin('upper', function (prop) {
       this.track('upper', 'Making ' + prop + ' upper case.');
       var val = this.get(prop);

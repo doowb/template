@@ -34,7 +34,7 @@ module.exports = function (view) {
       var obj = {};
       var views = this.items;
       for (var key in views) {
-        obj[key] = views[key];
+        obj[key] = this[key];
         obj[key].key = key;
       }
 

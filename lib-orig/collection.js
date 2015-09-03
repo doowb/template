@@ -61,7 +61,7 @@ function Collection(options) {
       lazy.forIn(items, function (item, key) {
         delete this._items[key];
         delete this[key];
-        this.setItem(key, item);
+        this.set(key, item);
       }, this);
     }
   });
@@ -81,11 +81,29 @@ utils.delegate(Collection.prototype, {
   constructor: Collection,
 
   /**
+   * Set a value.
+   */
+
+  set: function (prop, val) {
+    this.setItem(prop, val);
+    if (prop === 'app' || prop === 'collection') {
+      this.define(prop, val);
+    } else {
+      lazy.set(this, prop, val);
+    }
+    return this;
+  },
+
+  /**
    * Set an item
    */
 
   setItem: function (prop, val) {
-    this._items[prop] = val;
+    if (prop === 'app' || prop === 'collection') {
+      utils.defineProp(this._items, prop, val);
+    } else {
+      this._items[prop] = val;
+    }
     return this;
   },
 
@@ -107,10 +125,8 @@ utils.delegate(Collection.prototype, {
     if (typeof list === 'undefined') {
       var opts = lazy.clone(this.options);
       opts.items = items || this.items;
-      list = new List(opts);
-      list.define('app', this.app);
-      list.define('collection', this);
-      this.lists[name] = list;
+      opts.collection = this;
+      this.lists[name] = list = new List(opts);
     }
     return list;
   },

@@ -34,7 +34,8 @@ var Item = require('./item');
 function View(view, options) {
   this.history = [];
   Item.call(this, view, options);
-  this.init();
+  this.init(view);
+  return view;
 }
 
 /**
@@ -54,27 +55,39 @@ utils.delegate(View.prototype, {
    * Initialize view with base properties.
    */
 
-  init: function () {
-    this.base = this.base || this.cwd || process.cwd();
+  init: function (view) {
+    view.base = view.base || view.cwd || process.cwd();
     this.src = this.src || {};
-    this.validate();
+    // ensure that `view` has `path` and `content` properties
+    this.validate(view);
 
-    this.options.orig = this.content;
+    this.options.orig = view.content;
+    this.options.plural = this.collection.options.plural;
     this.options.viewType = this.options.viewType = [];
     this.options.handled = this.options.handled = [];
 
-    this.contexts = {};
-    this.locals = this.locals || {};
-    this.data = this.data || {};
+    this.contexts = view.contexts = {};
+    this.locals = view.locals || {};
+    this.data = view.data || {};
+    mixins(this);
 
     // add non-emumerable properties
+    this.defineOption('route', this.options.route);
     this.define('_callbacks', this._callbacks);
 
-    if (this.stat) {
-      utils.define('history', this.history);
-      utils.define('_contents', this._contents);
-      utils.define('stat', this.stat);
+    if (view.stat) {
+      utils.defineProp(view, 'history', view.history);
+      utils.defineProp(view, '_contents', view._contents);
+      utils.defineProp(view, 'stat', view.stat);
     }
+
+    view.__proto__ = this;
+    utils.defineProp(view, '_callbacks', view._callbacks);
+
+    // handle `onLoad` middleware routes
+    this.app.handleView('onLoad', view, view.locals);
+    this.ctx('locals', view.locals);
+    this.ctx('data', view.data);
   },
 
   /**
@@ -89,7 +102,6 @@ utils.delegate(View.prototype, {
     lazy.omit(this, keys, function (val, key) {
       res[key] = lazy.clone(val);
     });
-    res._content = res._content || this._content;
     return new Parent(res, opts);
   },
 
@@ -266,9 +278,9 @@ utils.delegate(View.prototype, {
    * Validate a view.
    */
 
-  validate: function () {
-    if (typeof this.path === 'undefined') {
-      utils.error('View#validate `path` is a required field: ', this);
+  validate: function (view) {
+    if (typeof view.path === 'undefined') {
+      utils.error('View#validate `path` is a required field: ', view);
     }
   }
 });
@@ -305,18 +317,17 @@ mixin('content', {
     utils.defineProp(this, '_content', content);
   },
   get: function() {
-    return this._content;
-    // if (this._content) {
-    //   return this._content;
-    // }
+    if (this._content) {
+      return this._content;
+    }
 
-    // if (Buffer.isBuffer(this.contents)) {
-    //   return this.contents.toString();
-    // }
-    // if (typeof this.path === 'string') {
-    //   this.read();
-    //   return this.content;
-    // }
+    if (Buffer.isBuffer(this.contents)) {
+      return this.contents.toString();
+    }
+    if (typeof this.path === 'string') {
+      this.read();
+      return this.content;
+    }
   }
 });
 

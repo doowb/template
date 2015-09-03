@@ -17,20 +17,14 @@ describe('Base', function () {
     assert.equal(base.hasOwnProperty('options'), true);
   });
 
-  it('should contain an `app` property', function () {
-    var base = new Base({app: {}});
-    assert.deepEqual(base.app, {});
-    assert.equal(base.hasOwnProperty('app'), true);
-  });
-
   it('should contain a `data` property', function () {
-    var base = new Base({app: {}});
+    var base = new Base();
     assert.deepEqual(base.data, {});
     assert.equal(base.hasOwnProperty('data'), true);
   });
 
   it('should contain a `_cache` property', function () {
-    var base = new Base({app: {}});
+    var base = new Base();
     assert.deepEqual(base._cache, {});
     assert.equal(base.hasOwnProperty('_cache'), true);
   });
@@ -125,7 +119,14 @@ describe('Base', function () {
 
   it('should pick an option from the `app.options`', function () {
     var app = new Base({foo: 'bar'});
-    var base = new Base({app: app});
+    var base = new Base();
+    base.app = app;
+    base.pickOption = function (key) {
+      var opt = this.option(key);
+      if (typeof opt === 'undefined') {
+        return this.app.option(key);
+      }
+    };
     assert.equal(base.pickOption('foo'), 'bar');
   });
 
